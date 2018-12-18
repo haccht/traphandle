@@ -1,0 +1,29 @@
+[source]
+version = "2c"
+community = "public"
+address = ":162"
+
+[[pipe]]
+  oid = "."
+
+  [pipe.file]
+  path = "/path/to/logfile"
+
+[[pipe]]
+  oid = "ospfNbrStateChange"
+  drop = true
+
+[[pipe]]
+  oid = "ospfIfStateChange"
+  drop = true
+
+  [pipe.exec]
+  command = "/path/to/command"
+
+[[pipe]]
+  oid = "."
+
+  [pipe.forward]
+  version = "1"
+  community = "public"
+  address = "10.10.10.10:161"
