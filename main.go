@@ -20,12 +20,15 @@ func Run(config SNMPTrapdConfig) error {
 		return err
 	}
 
-	/*
-		err = server.Serve(NewTrapListener(config))
-		if err != nil {
-			return err
-		}
-	*/
+	listener, err := NewTrapListener(config.Pipe)
+	if err != nil {
+		return err
+	}
+
+	err = server.Serve(listener)
+	if err != nil {
+		return err
+	}
 
 	return nil
 }

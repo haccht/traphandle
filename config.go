@@ -50,7 +50,8 @@ type FileConfig struct {
 }
 
 type ExecConfig struct {
-	Command string
+	Command  string
+	Interval int
 }
 
 func ParseTOMLConfig(path string) (SNMPTrapdConfig, error) {
