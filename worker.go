@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"io/ioutil"
 	"log"
 	"os"
@@ -20,7 +21,7 @@ func NewPipeWorker(config PipeConfig) (*PipeWorker, error) {
 	w.queues = make([]chan *snmpgo.TrapRequest, 0, 3)
 
 	if w.File.Path != "" {
-		c, err := w.performFile()
+		c, err := w.chFile()
 		if err != nil {
 			return nil, err
 		}
@@ -29,7 +30,7 @@ func NewPipeWorker(config PipeConfig) (*PipeWorker, error) {
 	}
 
 	if w.Exec.Command != "" {
-		c, err := w.performExec()
+		c, err := w.chExec()
 		if err != nil {
 			return nil, err
 		}
@@ -38,7 +39,7 @@ func NewPipeWorker(config PipeConfig) (*PipeWorker, error) {
 	}
 
 	if w.Forward.Address != "" {
-		c, err := w.performForward()
+		c, err := w.chForward()
 		if err != nil {
 			return nil, err
 		}
@@ -55,7 +56,7 @@ func (w *PipeWorker) perform(trap *snmpgo.TrapRequest) {
 	}
 }
 
-func (w *PipeWorker) performFile() (chan *snmpgo.TrapRequest, error) {
+func (w *PipeWorker) chFile() (chan *snmpgo.TrapRequest, error) {
 	c := make(chan *snmpgo.TrapRequest, 1000)
 
 	fd, err := os.OpenFile(w.File.Path, os.O_RDWR|os.O_CREATE|os.O_APPEND, 0666)
@@ -76,7 +77,7 @@ func (w *PipeWorker) performFile() (chan *snmpgo.TrapRequest, error) {
 	return c, nil
 }
 
-func (w *PipeWorker) performExec() (chan *snmpgo.TrapRequest, error) {
+func (w *PipeWorker) chExec() (chan *snmpgo.TrapRequest, error) {
 	c := make(chan *snmpgo.TrapRequest, 1000)
 
 	interval := w.Exec.Interval
@@ -84,6 +85,7 @@ func (w *PipeWorker) performExec() (chan *snmpgo.TrapRequest, error) {
 		interval = 5
 	}
 
+	const format = "20060102150405"
 	ticker := time.NewTicker(time.Duration(interval) * time.Second)
 
 	go func() {
@@ -104,17 +106,21 @@ func (w *PipeWorker) performExec() (chan *snmpgo.TrapRequest, error) {
 					continue
 				}
 
-				tmpfile, _ = ioutil.TempFile("", "_snmpforward")
+				filename := fmt.Sprintf("snmptrapd%s_", time.Now().Format(format))
+				tmpfile, _ = ioutil.TempFile("", filename)
 				tmpfile.Chmod(0666)
 
 				for _, trap := range buffer {
-					tmpfile.WriteString(trap.Pdu.VarBinds().String())
+					tmpfile.WriteString(fmt.Sprintf(
+						"{\"Source\": \"%s\", \"VarBinds\": %s}\n",
+						trap.Source, trap.Pdu.VarBinds().String()))
 				}
 
+				tmpfile.Close()
 				exec.Command(w.Exec.Command, tmpfile.Name()).Run()
 
 				buffer = nil
-				tmpfile.Close()
+				os.Remove(tmpfile.Name())
 			}
 
 		}
@@ -123,7 +129,7 @@ func (w *PipeWorker) performExec() (chan *snmpgo.TrapRequest, error) {
 	return c, nil
 }
 
-func (w *PipeWorker) performForward() (chan *snmpgo.TrapRequest, error) {
+func (w *PipeWorker) chForward() (chan *snmpgo.TrapRequest, error) {
 	c := make(chan *snmpgo.TrapRequest, 1000)
 
 	forwarder, err := snmpgo.NewSNMP(snmpgo.SNMPArguments{
