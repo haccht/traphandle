@@ -21,30 +21,30 @@ func NewPipeWorker(config PipeConfig) (*PipeWorker, error) {
 	w.queues = make([]chan *snmpgo.TrapRequest, 0, 3)
 
 	if w.File.Path != "" {
-		c, err := w.chFile()
+		queue, err := w.queueFile()
 		if err != nil {
 			return nil, err
 		}
 
-		w.queues = append(w.queues, c)
+		w.queues = append(w.queues, queue)
 	}
 
 	if w.Exec.Command != "" {
-		c, err := w.chExec()
+		queue, err := w.queueExec()
 		if err != nil {
 			return nil, err
 		}
 
-		w.queues = append(w.queues, c)
+		w.queues = append(w.queues, queue)
 	}
 
 	if w.Forward.Address != "" {
-		c, err := w.chForward()
+		queue, err := w.queueForward()
 		if err != nil {
 			return nil, err
 		}
 
-		w.queues = append(w.queues, c)
+		w.queues = append(w.queues, queue)
 	}
 
 	return w, nil
@@ -56,7 +56,7 @@ func (w *PipeWorker) perform(trap *snmpgo.TrapRequest) {
 	}
 }
 
-func (w *PipeWorker) chFile() (chan *snmpgo.TrapRequest, error) {
+func (w *PipeWorker) queueFile() (chan *snmpgo.TrapRequest, error) {
 	c := make(chan *snmpgo.TrapRequest, 1000)
 
 	fd, err := os.OpenFile(w.File.Path, os.O_RDWR|os.O_CREATE|os.O_APPEND, 0666)
@@ -77,7 +77,7 @@ func (w *PipeWorker) chFile() (chan *snmpgo.TrapRequest, error) {
 	return c, nil
 }
 
-func (w *PipeWorker) chExec() (chan *snmpgo.TrapRequest, error) {
+func (w *PipeWorker) queueExec() (chan *snmpgo.TrapRequest, error) {
 	c := make(chan *snmpgo.TrapRequest, 1000)
 
 	interval := w.Exec.Interval
@@ -106,7 +106,7 @@ func (w *PipeWorker) chExec() (chan *snmpgo.TrapRequest, error) {
 					continue
 				}
 
-				filename := fmt.Sprintf("snmptrapd%s_", time.Now().Format(format))
+				filename := fmt.Sprintf("trapproxy%s_", time.Now().Format(format))
 				tmpfile, _ = ioutil.TempFile("", filename)
 				tmpfile.Chmod(0666)
 
@@ -129,7 +129,7 @@ func (w *PipeWorker) chExec() (chan *snmpgo.TrapRequest, error) {
 	return c, nil
 }
 
-func (w *PipeWorker) chForward() (chan *snmpgo.TrapRequest, error) {
+func (w *PipeWorker) queueForward() (chan *snmpgo.TrapRequest, error) {
 	c := make(chan *snmpgo.TrapRequest, 1000)
 
 	forwarder, err := snmpgo.NewSNMP(snmpgo.SNMPArguments{

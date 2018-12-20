@@ -8,10 +8,10 @@ type TrapListener struct {
 	workers []*PipeWorker
 }
 
-func NewTrapListener(configs []PipeConfig) (*TrapListener, error) {
-	workers := make([]*PipeWorker, 0, len(configs))
-	for _, c := range configs {
-		worker, err := NewPipeWorker(c)
+func NewTrapListener(pipes []PipeConfig) (*TrapListener, error) {
+	workers := make([]*PipeWorker, 0, len(pipes))
+	for _, p := range pipes {
+		worker, err := NewPipeWorker(p)
 		if err != nil {
 			return nil, err
 		}
@@ -28,7 +28,7 @@ func (l *TrapListener) OnTRAP(trap *snmpgo.TrapRequest) {
 	}
 
 	for _, w := range l.workers {
-		if w.OID != "" {
+		if w.OID != "." {
 			prefix, err := snmpgo.NewOid(w.OID)
 			if err != nil {
 				continue

@@ -1,12 +1,13 @@
 package main
 
 import (
+	"flag"
 	"log"
 
 	"github.com/k-sone/snmpgo"
 )
 
-func Run(config SNMPTrapdConfig) error {
+func Run(config TrapProxyConfig) error {
 	server, err := snmpgo.NewTrapServer(snmpgo.ServerArguments{LocalAddr: config.Source.Address})
 	if err != nil {
 		return err
@@ -34,7 +35,10 @@ func Run(config SNMPTrapdConfig) error {
 }
 
 func main() {
-	config, err := ParseTOMLConfig("config.toml")
+	var path = flag.String("config", "config.toml", "Path to the configuration file.")
+	flag.Parse()
+
+	config, err := ParseTOMLConfig(*path)
 	if err != nil {
 		log.Fatal(err)
 	}

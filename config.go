@@ -7,7 +7,7 @@ import (
 	"github.com/k-sone/snmpgo"
 )
 
-type SNMPTrapdConfig struct {
+type TrapProxyConfig struct {
 	Source SNMPConfig
 	Pipe   []PipeConfig
 }
@@ -54,8 +54,8 @@ type ExecConfig struct {
 	Interval int
 }
 
-func ParseTOMLConfig(path string) (SNMPTrapdConfig, error) {
-	var config SNMPTrapdConfig
+func ParseTOMLConfig(path string) (TrapProxyConfig, error) {
+	var config TrapProxyConfig
 
 	_, err := toml.DecodeFile(path, &config)
 	if err != nil {
