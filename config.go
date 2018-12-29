@@ -1,29 +1,30 @@
 package main
 
 import (
+	"flag"
 	"fmt"
 
 	"github.com/BurntSushi/toml"
-	"github.com/k-sone/snmpgo"
+	"github.com/soniah/gosnmp"
 )
 
-type TrapProxyConfig struct {
+type TrapHandleConfig struct {
 	Source SNMPConfig
-	Pipe   []PipeConfig
+	Handle []HandleConfig
 }
 
 type version struct {
-	snmpgo.SNMPVersion
+	gosnmp.SnmpVersion
 }
 
 func (v *version) UnmarshalText(text []byte) error {
 	switch string(text) {
 	case "1":
-		v.SNMPVersion = snmpgo.V1
+		v.SnmpVersion = gosnmp.Version1
 	case "2c":
-		v.SNMPVersion = snmpgo.V2c
+		v.SnmpVersion = gosnmp.Version2c
 	case "3":
-		v.SNMPVersion = snmpgo.V3
+		v.SnmpVersion = gosnmp.Version3
 	default:
 		return fmt.Errorf("Illegal Version, value `%s`", text)
 	}
@@ -37,27 +38,32 @@ type SNMPConfig struct {
 	Community string
 }
 
-type PipeConfig struct {
-	OID     string
-	Drop    bool
-	File    FileConfig
-	Exec    ExecConfig
-	Forward SNMPConfig
+type HandleConfig struct {
+	OID  string
+	Drop bool
+	Log  LogConfig
+	Cmd  CmdConfig
+	Fwd  SNMPConfig
 }
 
-type FileConfig struct {
-	Path string
+type LogConfig struct {
+	Prefix  string
+	Logfile string
 }
 
-type ExecConfig struct {
+type CmdConfig struct {
 	Command  string
 	Interval int
 }
 
-func ParseTOMLConfig(path string) (TrapProxyConfig, error) {
-	var config TrapProxyConfig
+func NewTrapHandleConfig() (TrapHandleConfig, error) {
+	var config TrapHandleConfig
+	var configPath string
 
-	_, err := toml.DecodeFile(path, &config)
+	flag.StringVar(&configPath, "config", "config.toml", "Path to the configuration file.")
+	flag.Parse()
+
+	_, err := toml.DecodeFile(configPath, &config)
 	if err != nil {
 		return config, err
 	}

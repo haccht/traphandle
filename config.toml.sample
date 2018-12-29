@@ -1,29 +1,26 @@
 [source]
+address = "0.0.0.0:162"
 version = "2c"
 community = "public"
-address = ":162"
 
-[[pipe]]
+[[handle]]
   oid = "."
-
-  [pipe.file]
+  [handle.log]
   path = "/path/to/logfile"
 
-[[pipe]]
-  oid = "ospfNbrStateChange"
+[[handle]]
+  oid = "ifAdminStatus"
   drop = true
 
-[[pipe]]
-  oid = "ospfIfStateChange"
+[[handle]]
+  oid = "ifOperStatus"
   drop = true
-
-  [pipe.exec]
+  [handle.cmd]
   command = "/path/to/command"
 
-[[pipe]]
+[[handle]]
   oid = "."
-
-  [pipe.forward]
+  [handle.fwd]
+  address = "10.10.10.10:162"
   version = "1"
   community = "public"
-  address = "10.10.10.10:161"
