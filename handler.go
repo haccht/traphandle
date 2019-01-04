@@ -20,7 +20,7 @@ const datetimeFormat = "20060102150405"
 var (
 	snmpTrapOIDRegexp = regexp.MustCompile(`^\.1\.3\.6\.1\.6\.3\.1\.1\.4\.1\.0`)
 	snmpTrapsRegexp   = regexp.MustCompile(`^\.1\.3\.6\.1\.6\.3\.1\.1\.5.(\d+)`)
-	enterprisesRegexp = regexp.MustCompile(`^\.1\.3\.6\.1\.4\.1(\.\d+)+(\.0)?\.(\d+)$`)
+	enterprisesRegexp = regexp.MustCompile(`^(\.1\.3\.6\.1\.4\.1\.\d+)+(\.0)?\.(\d+)$`)
 )
 
 type TrapHandler struct {
@@ -251,6 +251,8 @@ func makeFwdQueue(config SNMPConfig) (chan *snmpTrap, error) {
 		Port:      uint16(port_num),
 		Community: config.Community,
 		Version:   config.Version.SnmpVersion,
+		Timeout:   time.Duration(2) * time.Second,
+		Retries:   3,
 	}
 
 	if err = client.Connect(); err != nil {
@@ -266,41 +268,46 @@ func makeFwdQueue(config SNMPConfig) (chan *snmpTrap, error) {
 			switch trap.packet.Version {
 			case gosnmp.Version1:
 				newTrap = trap.packet.SnmpTrap
-			case gosnmp.Version2c, gosnmp.Version3:
+			case gosnmp.Version2c:
+				var varBinds []gosnmp.SnmpPDU
 				var enterprise string
 				var genericTrap, specificTrap int
 
 				for _, v := range trap.packet.Variables {
-					if !snmpTrapOIDRegexp.MatchString(v.Name) {
-						continue
+					if v.Type == gosnmp.TimeTicks {
+						v.Value = uint32(v.Value.(uint))
 					}
 
-					value := v.Value.(string)
-					if sm := snmpTrapsRegexp.FindStringSubmatch(value); len(sm) > 0 {
-						enterprise = value
-						genericTrap, _ = strconv.Atoi(sm[1])
-						specificTrap = 0
-						break
-					} else if sm := enterprisesRegexp.FindStringSubmatch(value); len(sm) > 0 {
-						enterprise = sm[1]
-						genericTrap = 6
-						specificTrap, _ = strconv.Atoi(sm[3])
-						break
+					varBinds = append(varBinds, v)
+					if snmpTrapOIDRegexp.MatchString(v.Name) {
+						value := v.Value.(string)
+						if sm := snmpTrapsRegexp.FindStringSubmatch(value); len(sm) > 0 {
+							enterprise = value
+							genericTrap, _ = strconv.Atoi(sm[1])
+							specificTrap = 0
+							break
+						} else if sm := enterprisesRegexp.FindStringSubmatch(value); len(sm) > 0 {
+							enterprise = sm[1]
+							genericTrap = 6
+							specificTrap, _ = strconv.Atoi(sm[3])
+							break
+						}
 					}
 				}
 
 				agentAddr, _, _ := net.SplitHostPort(trap.source.String())
 				newTrap = gosnmp.SnmpTrap{
-					Variables:    trap.packet.Variables,
+					Variables:    varBinds,
 					Enterprise:   enterprise,
 					AgentAddress: agentAddr,
 					GenericTrap:  genericTrap,
 					SpecificTrap: specificTrap,
-					Timestamp:    300,
 				}
 			}
 
-			client.SendTrap(newTrap)
+			if _, err := client.SendTrap(newTrap); err != nil {
+				log.Printf("SendTrap err: %v", err)
+			}
 		}
 	}()
 
