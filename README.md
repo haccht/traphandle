@@ -1,11 +1,11 @@
-SNMP Trapを受け取り、TrapのOIDによってログ書き込み/スクリプト起動/Trap転送を行う。
+SNMP Trapを受け取り、TrapのOIDに基づいてログ書き込み/外部スクリプト起動/Trap転送を行う。
 
 ## 使い方
 ```
 traphandle -config config.toml
 ```
 
-162番ポートで待ち受ける場合はroot権限が必須。
+ポート162/udpで待ち受けるにはroot権限が必須。
 
 ## 設定ファイル
 
@@ -15,7 +15,7 @@ traphandle -config config.toml
 [source]
 version = "2c"
 community = "public"
-address = ":162"
+address = "0.0.0.0:162"
 
 # Log all traps to logfile
 [[pipe]]
