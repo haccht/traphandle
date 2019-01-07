@@ -208,17 +208,19 @@ func makeCmdQueue(config CmdConfig) (chan *snmpTrap, error) {
 				}
 
 				filename := fmt.Sprintf("traphandle_%s_", time.Now().Format(datetimeFormat))
-
 				tempfile, _ := ioutil.TempFile("", filename)
 				tempfile.Chmod(0666)
 
 				for _, trap := range buffer {
 					tempfile.WriteString(trap.String() + "\n")
 				}
-				buffer = nil
 
+				buffer = nil
 				tempfile.Close()
-				exec.Command(config.Command, tempfile.Name()).Run()
+
+				cmdargs := strings.Fields(config.Command)
+				cmdargs = append(cmdargs, tempfile.Name())
+				exec.Command(cmdargs[0], cmdargs[1:]...).Run()
 
 				os.Remove(tempfile.Name())
 			}
