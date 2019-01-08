@@ -13,23 +13,27 @@ traphandle -config config.toml
 
 ```
 [source]
+# Trap source does not support SNMP Version 3
 version = "2c"
 community = "public"
 address = "0.0.0.0:162"
 
 # Log all traps to logfile
 [[pipe]]
+  # matches all OIDs
   oid = "."
   [pipe.log]
   logfile = "/path/to/logfile"
 
 # Drop OIDs that starts with ".1.3.6.1.6.3.1.1.5.4"
 [[pipe]]
+  # matches OID that starts with ".1.3.6.1.6.3.1.1.5.4"
   oid = ".1.3.6.1.6.3.1.1.5.4"
   drop = true
 
 # Drop OIDs that starts with ".1.3.6.1.6.3.1.1.5.3" and execute a command
 [[pipe]]
+  # matches OID that starts with ".1.3.6.1.6.3.1.1.5.3"
   oid = ".1.3.6.1.6.3.1.1.5.3"
   drop = true
   [pipe.cmd]
@@ -37,7 +41,7 @@ address = "0.0.0.0:162"
 
 # Forward all traps except ".1.3.6.1.6.3.1.1.5.4" and ".1.3.6.1.6.3.1.1.5.3"
 [[pipe]]
-  # "." matches all OIDs
+  # matches all OIDs
   oid = "."
   [pipe.fwd]
   # Forward handle only support SNMP Version 1

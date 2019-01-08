@@ -23,8 +23,6 @@ func (v *version) UnmarshalText(text []byte) error {
 		v.SnmpVersion = gosnmp.Version1
 	case "2c":
 		v.SnmpVersion = gosnmp.Version2c
-	case "3":
-		v.SnmpVersion = gosnmp.Version3
 	default:
 		return fmt.Errorf("Illegal Version, value `%s`", text)
 	}
