@@ -5,11 +5,11 @@ SNMP Trapを受け取り、TrapのOIDに基づいてログ書き込み/外部ス
 traphandle -config config.toml
 ```
 
-ポート162/udpで待ち受けるにはroot権限が必須。
+ポート162/udpで待ち受けるにはroot権限が必要。
 
 ## 設定ファイル
 
-設定はTOML形式で記述する
+設定はTOML形式で、以下のようにOID毎にhandleを設定する。
 
 ```
 [source]
@@ -19,31 +19,31 @@ community = "public"
 address = "0.0.0.0:162"
 
 # Log all traps to logfile
-[[pipe]]
+[[handle]]
   # matches all OIDs
   oid = "."
-  [pipe.log]
+  [handle.log]
   logfile = "/path/to/logfile"
 
 # Drop OIDs that starts with ".1.3.6.1.6.3.1.1.5.4"
-[[pipe]]
+[[handle]]
   # matches OID that starts with ".1.3.6.1.6.3.1.1.5.4"
   oid = ".1.3.6.1.6.3.1.1.5.4"
   drop = true
 
 # Drop OIDs that starts with ".1.3.6.1.6.3.1.1.5.3" and execute a command
-[[pipe]]
+[[handle]]
   # matches OID that starts with ".1.3.6.1.6.3.1.1.5.3"
   oid = ".1.3.6.1.6.3.1.1.5.3"
   drop = true
-  [pipe.cmd]
+  [handle.cmd]
   command = "/path/to/command"
 
 # Forward all traps except ".1.3.6.1.6.3.1.1.5.4" and ".1.3.6.1.6.3.1.1.5.3"
-[[pipe]]
+[[handle]]
   # matches all OIDs
   oid = "."
-  [pipe.fwd]
+  [handle.fwd]
   # Forward handle only support SNMP Version 1
   version = "1"
   community = "public"
