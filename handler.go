@@ -20,7 +20,7 @@ const datetimeFormat = "20060102150405"
 var (
 	snmpTrapOIDRegexp = regexp.MustCompile(`^\.1\.3\.6\.1\.6\.3\.1\.1\.4\.1\.0`)
 	snmpTrapsRegexp   = regexp.MustCompile(`^\.1\.3\.6\.1\.6\.3\.1\.1\.5.(\d+)`)
-	enterprisesRegexp = regexp.MustCompile(`^(\.1\.3\.6\.1\.4\.1\.\d+)+(\.0)?\.(\d+)$`)
+	enterprisesRegexp = regexp.MustCompile(`^(\.1\.3\.6\.1\.4\.1\.\d+)(\.0)?\.(\d+)$`)
 )
 
 type TrapHandler struct {
@@ -220,7 +220,7 @@ func makeCmdQueue(config CmdConfig) (chan *snmpTrap, error) {
 
 				cmdargs := strings.Fields(config.Command)
 				cmdargs = append(cmdargs, tempfile.Name())
-				exec.Command(cmdargs[0], cmdargs[1:]...).Run()
+				exec.Command(cmdargs[0], cmdargs[1:]...).Start()
 
 				os.Remove(tempfile.Name())
 			}
